@@ -1,0 +1,105 @@
+body {
+  background-color: rgb(32, 32, 32);
+  color: #fff;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+form input,
+form textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+form input {
+  height: 2.5rem;
+}
+
+form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+
+form button {
+  width: 150px;
+  align-self: center;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: green;
+  color: white;
+  cursor: pointer;
+}
+
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  
+}
+
+li {
+  background-color: #444;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+li strong {
+  font-size: 1.2rem;
+  background-color: rgba(0, 0, 0, 0.452);
+  text-align: center;
+}
+
+
+li button {
+  width: 100px;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+button.edit {
+  background-color: gray;
+}
+
+button.delete {
+  background-color: rgb(255, 0, 0);
+}
+
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
