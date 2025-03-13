@@ -6,15 +6,15 @@ import ActiveProject from './activeProject';
 import User from './user';
 
 function App() {
-  // CRUD dla projektów
+  
   const [projects, setProjects] = useState([]);
   const [projectForm, setProjectForm] = useState({ nazwa: '', opis: '' });
   const [editingProjectId, setEditingProjectId] = useState(null);
 
-  // Aktywny projekt
+  
   const [activeProject, setActiveProject] = useState(null);
 
-  // CRUD dla historyjek
+  
   const [stories, setStories] = useState([]);
   const [storyForm, setStoryForm] = useState({
     nazwa: '',
@@ -23,10 +23,10 @@ function App() {
   });
   const [editingStoryId, setEditingStoryId] = useState(null);
 
-  // Dodatkowo filtr dla historyjek: "all", "todo", "doing", "done"
+  
   const [storyFilter, setStoryFilter] = useState("all");
 
-  // Ładujemy dane przy starcie
+  
   useEffect(() => {
     const allProjects = ProjectAPI.getAll();
     setProjects(allProjects);
@@ -35,7 +35,7 @@ function App() {
     if (ap) loadStories(ap);
   }, []);
 
-  // Funkcje dla projektów
+  
   const handleProjectSubmit = (e) => {
     e.preventDefault();
     if (editingProjectId) {
@@ -66,7 +66,7 @@ function App() {
     loadStories(selectedProject);
   };
 
-  // Funkcje dla historyjek
+  
   const loadStories = (project) => {
     if (project) {
       const allStories = StoryAPI.getAll();
@@ -118,7 +118,7 @@ function App() {
       opis: storyForm.opis,
       priorytet: storyForm.priorytet,
       projekt: activeProject.id,
-      dataUtworzenia: new Date().toISOString(), // dla uproszczenia aktualizujemy datę
+      dataUtworzenia: new Date().toISOString(), 
       stan: 'todo',
       wlasciciel: User.id
     };
@@ -128,18 +128,18 @@ function App() {
     loadStories(activeProject);
   };
 
-  // Funkcja do zmiany stanu historyjki
+  
   const handleStoryStateChange = (story, newState) => {
     const updatedStory = { ...story, stan: newState };
     StoryAPI.update(updatedStory);
     loadStories(activeProject);
   };
 
-  // Filtrowanie historyjek według stanu (dla opcji filtrowania "jednej listy")
+  
   const filteredStories =
     storyFilter === "all" ? stories : stories.filter((s) => s.stan === storyFilter);
 
-  // Dodatkowy widok: trzy sekcje dla podziału historyjek
+  
   const todoStories = stories.filter((s) => s.stan === 'todo');
   const doingStories = stories.filter((s) => s.stan === 'doing');
   const doneStories = stories.filter((s) => s.stan === 'done');
@@ -151,7 +151,7 @@ function App() {
         Zalogowany użytkownik: {User.imie} {User.nazwisko}
       </p>
 
-      {/* Sekcja CRUD dla projektów */}
+      
       <section>
         <h2>Projekty</h2>
         <form onSubmit={handleProjectSubmit}>
@@ -194,7 +194,7 @@ function App() {
         </ul>
       </section>
 
-      {/* Sekcja wyboru aktywnego projektu */}
+      
       <section style={{ marginTop: '2rem' }}>
         <h2>Wybierz aktywny projekt</h2>
         <select value={activeProject ? activeProject.id : ''} onChange={handleActiveProjectChange}>
@@ -209,7 +209,7 @@ function App() {
         </select>
       </section>
 
-      {/* Sekcja CRUD dla historyjek */}
+      
       {activeProject && (
         <section style={{ marginTop: '2rem' }}>
           <h2>
@@ -248,7 +248,7 @@ function App() {
             </button>
           </form>
 
-          {/* Opcjonalne filtrowanie - widok jednej listy */}
+          
           <div style={{ marginBottom: '1rem' }}>
             <strong>Filtruj historyjki:</strong>
             <div className="button-group">
@@ -259,7 +259,7 @@ function App() {
             </div>
           </div>
 
-          {/* Widok z filtrowaniem */}
+          
           {storyFilter !== "all" && (
             <div>
               <h3>Widok filtrowany: {storyFilter.toUpperCase()}</h3>
@@ -288,7 +288,7 @@ function App() {
             </div>
           )}
 
-          {/* Alternatywny widok: podział na trzy sekcje */}
+          
           {storyFilter === "all" && (
             <>
               <div>
