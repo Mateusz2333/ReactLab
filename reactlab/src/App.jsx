@@ -253,9 +253,9 @@ function App() {
             <strong>Filtruj historyjki:</strong>
             <div className="button-group">
               <button onClick={() => setStoryFilter("all")}>Wszystkie</button>
-              <button onClick={() => setStoryFilter("todo")}>Todo</button>
-              <button onClick={() => setStoryFilter("doing")}>Doing</button>
-              <button onClick={() => setStoryFilter("done")}>Done</button>
+              <button onClick={() => setStoryFilter("todo")}>Do zrobienia</button>
+              <button onClick={() => setStoryFilter("doing")}>W trakcie</button>
+              <button onClick={() => setStoryFilter("done")}>Zrobione</button>
             </div>
           </div>
 
@@ -277,9 +277,9 @@ function App() {
                           handleStoryStateChange(story, e.target.value)
                         }
                       >
-                        <option value="todo">Todo</option>
-                        <option value="doing">Doing</option>
-                        <option value="done">Done</option>
+                        <option value="todo">Do zrobienia</option>
+                        <option value="doing">W trakcie</option>
+                        <option value="done">Zrobione</option>
                       </select>
                     </div>
                   </li>
@@ -292,7 +292,7 @@ function App() {
           {storyFilter === "all" && (
             <>
               <div>
-                <h3>Todo</h3>
+                <h3>Do zrobienia 🟥</h3>
                 <ul>
                   {todoStories.map((story) => (
                     <li key={story.id}>
@@ -307,9 +307,9 @@ function App() {
                             handleStoryStateChange(story, e.target.value)
                           }
                         >
-                          <option value="todo">Todo</option>
-                          <option value="doing">Doing</option>
-                          <option value="done">Done</option>
+                          <option value="todo">Do zrobienia 🟥</option>
+                          <option value="doing">W trakcie 🟨</option>
+                          <option value="done">Zrobione 🟩</option>
                         </select>
                       </div>
                     </li>
@@ -318,7 +318,7 @@ function App() {
               </div>
 
               <div>
-                <h3>Doing</h3>
+                <h3>W trakcie 🟨</h3>
                 <ul>
                   {doingStories.map((story) => (
                     <li key={story.id}>
@@ -333,9 +333,9 @@ function App() {
                             handleStoryStateChange(story, e.target.value)
                           }
                         >
-                          <option value="todo">Todo</option>
-                          <option value="doing">Doing</option>
-                          <option value="done">Done</option>
+                          <option value="todo">Do zrobienia 🟥</option>
+                          <option value="doing">W trakcie 🟨</option>
+                          <option value="done">Zrobione 🟩</option>
                         </select>
                       </div>
                     </li>
@@ -344,7 +344,7 @@ function App() {
               </div>
 
               <div>
-                <h3>Done</h3>
+                <h3>Zrobione 🟩</h3>
                 <ul>
                   {doneStories.map((story) => (
                     <li key={story.id}>
@@ -359,9 +359,9 @@ function App() {
                             handleStoryStateChange(story, e.target.value)
                           }
                         >
-                          <option value="todo">Todo</option>
-                          <option value="doing">Doing</option>
-                          <option value="done">Done</option>
+                          <option value="todo">Do zrobienia 🟥</option>
+                          <option value="doing">W trakcie 🟨</option>
+                          <option value="done">Zrobione 🟩</option>
                         </select>
                       </div>
                     </li>
