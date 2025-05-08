@@ -1,24 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from './AuthContext';
 
 function LoginForm({ onLoginSuccess }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { login: authLogin } = useContext(AuthContext); 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3000/api/login', {
+      const res = await fetch('http://localhost:3001/api/login', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login, password })
+        body: JSON.stringify({ username: login, password }) 
       });
       if (!res.ok) {
         setError('Błędny login lub hasło');
         return;
       }
       const data = await res.json();
-      onLoginSuccess(data);
+
+      
+      authLogin(data.token, data.refreshToken);
+
+      onLoginSuccess(data); 
     } catch (error) {
       setError('Wystąpił błąd');
     }

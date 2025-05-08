@@ -359,9 +359,9 @@ function Dashboard() {
                       value={s.stan}
                       onChange={e=>handleStoryStateChange(s,e.target.value)}
                     >
-                      <option value="todo">🟥</option>
-                      <option value="doing">🟨</option>
-                      <option value="done">🟩</option>
+                       <option value="todo">TODO🟥</option>
+                      <option value="doing">DOING🟨</option>
+                      <option value="done">DONE🟩</option>
                     </select>
                   </li>
                 ))}
@@ -377,9 +377,9 @@ function Dashboard() {
                       value={s.stan}
                       onChange={e=>handleStoryStateChange(s,e.target.value)}
                     >
-                      <option value="todo">🟥</option>
-                      <option value="doing">🟨</option>
-                      <option value="done">🟩</option>
+                      <option value="todo">TODO🟥</option>
+                      <option value="doing">DOING🟨</option>
+                      <option value="done">DONE🟩</option>
                     </select>
                   </li>
                 ))}
@@ -395,9 +395,9 @@ function Dashboard() {
                       value={s.stan}
                       onChange={e=>handleStoryStateChange(s,e.target.value)}
                     >
-                      <option value="todo">🟥</option>
-                      <option value="doing">🟨</option>
-                      <option value="done">🟩</option>
+                      <option value="todo">TODO🟥</option>
+                      <option value="doing">DOING🟨</option>
+                      <option value="done">DONE🟩</option>
                     </select>
                   </li>
                 ))}
@@ -429,9 +429,9 @@ function Dashboard() {
               value={taskForm.priorytet}
               onChange={e=>setTaskForm({...taskForm,priorytet:e.target.value})}
             >
-              <option value="niski">Niski</option>
-              <option value="średni">Średni</option>
-              <option value="wysoki">Wysoki</option>
+              <option value="niski">🟩Niski</option>
+              <option value="średni">🟨Średni</option>
+              <option value="wysoki">🟥Wysoki</option>
             </select>
             <input
               type="text"
