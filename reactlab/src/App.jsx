@@ -1,12 +1,15 @@
+// src/App.jsx
 import './App.css';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import ProjectAPI from './project';
 import StoryAPI from './story';
 import TaskAPI from './task';
 import ActiveProject from './activeProject';
 import users from './user';
+import LoginForm from './loginForm';
+import { AuthContext, AuthProvider } from './AuthContext';
 
-function App() {
+function Dashboard() {
   // CRUD dla projektów
   const [projects, setProjects] = useState([]);
   const [projectForm, setProjectForm] = useState({ nazwa: '', opis: '' });
@@ -23,7 +26,7 @@ function App() {
     priorytet: 'niski'
   });
   const [editingStoryId, setEditingStoryId] = useState(null);
-  const [storyFilter, setStoryFilter] = useState("all");
+  const [storyFilter, setStoryFilter] = useState('all');
 
   // CRUD dla zadań
   const [tasks, setTasks] = useState([]);
@@ -32,37 +35,32 @@ function App() {
     opis: '',
     priorytet: 'niski',
     przewidywanyCzas: '',
-    historyjkaId: '' // wybieramy historyjkę, do której należy zadanie
+    historyjkaId: ''
   });
   const [editingTaskId, setEditingTaskId] = useState(null);
 
-  // Funkcja loadStories opakowana w useCallback
+  // Wczytywanie danych
   const loadStories = useCallback((project) => {
     if (project) {
       const allStories = StoryAPI.getAll();
-      const filtered = allStories.filter(s => s.projekt === project.id);
-      setStories(filtered);
+      setStories(allStories.filter(s => s.projekt === project.id));
     } else {
       setStories([]);
     }
   }, []);
 
-  // Funkcja loadTasks opakowana w useCallback
   const loadTasks = useCallback((project) => {
     if (project) {
       const allTasks = TaskAPI.getAll();
-      const projectStories = StoryAPI.getAll().filter(s => s.projekt === project.id);
-      const filtered = allTasks.filter(t => projectStories.some(story => story.id === t.historyjkaId));
-      setTasks(filtered);
+      const projStories = StoryAPI.getAll().filter(s => s.projekt === project.id);
+      setTasks(allTasks.filter(t => projStories.some(st => st.id === t.historyjkaId)));
     } else {
       setTasks([]);
     }
   }, []);
 
-  // Ładujemy dane przy starcie
   useEffect(() => {
-    const allProjects = ProjectAPI.getAll();
-    setProjects(allProjects);
+    setProjects(ProjectAPI.getAll());
     const ap = ActiveProject.get();
     setActiveProject(ap);
     if (ap) {
@@ -71,8 +69,8 @@ function App() {
     }
   }, [loadStories, loadTasks]);
 
-  // Funkcje dla projektów
-  const handleProjectSubmit = (e) => {
+  // Projekty
+  const handleProjectSubmit = e => {
     e.preventDefault();
     if (editingProjectId) {
       ProjectAPI.update({ id: editingProjectId, ...projectForm });
@@ -83,31 +81,28 @@ function App() {
     setProjectForm({ nazwa: '', opis: '' });
     setProjects(ProjectAPI.getAll());
   };
-
-  const handleProjectDelete = (id) => {
+  const handleProjectEdit = p => {
+    setEditingProjectId(p.id);
+    setProjectForm({ nazwa: p.nazwa, opis: p.opis });
+  };
+  const handleProjectDelete = id => {
     ProjectAPI.delete(id);
     setProjects(ProjectAPI.getAll());
   };
-
-  const handleProjectEdit = (project) => {
-    setEditingProjectId(project.id);
-    setProjectForm({ nazwa: project.nazwa, opis: project.opis });
+  const handleActiveProjectChange = e => {
+    const id = +e.target.value;
+    const sel = projects.find(p => p.id === id);
+    setActiveProject(sel);
+    ActiveProject.set(sel);
+    loadStories(sel);
+    loadTasks(sel);
   };
 
-  const handleActiveProjectChange = (e) => {
-    const projectId = parseInt(e.target.value);
-    const selectedProject = projects.find(p => p.id === projectId);
-    setActiveProject(selectedProject);
-    ActiveProject.set(selectedProject);
-    loadStories(selectedProject);
-    loadTasks(selectedProject);
-  };
-
-  // Funkcje dla historyjek
-  const handleStorySubmit = (e) => {
+  // Historyjki
+  const handleStorySubmit = e => {
     e.preventDefault();
     if (!activeProject) return;
-    const newStory = {
+    StoryAPI.create({
       id: Date.now(),
       nazwa: storyForm.nazwa,
       opis: storyForm.opis,
@@ -116,30 +111,18 @@ function App() {
       dataUtworzenia: new Date().toISOString(),
       stan: 'todo',
       wlasciciel: users.find(u => u.rola === 'admin').id
-    };
-    StoryAPI.create(newStory);
+    });
     loadStories(activeProject);
     setStoryForm({ nazwa: '', opis: '', priorytet: 'niski' });
   };
-
-  const handleStoryDelete = (id) => {
-    StoryAPI.delete(id);
-    loadStories(activeProject);
+  const handleStoryEdit = s => {
+    setEditingStoryId(s.id);
+    setStoryForm({ nazwa: s.nazwa, opis: s.opis, priorytet: s.priorytet });
   };
-
-  const handleStoryEdit = (story) => {
-    setEditingStoryId(story.id);
-    setStoryForm({
-      nazwa: story.nazwa,
-      opis: story.opis,
-      priorytet: story.priorytet
-    });
-  };
-
-  const handleStoryUpdate = (e) => {
+  const handleStoryUpdate = e => {
     e.preventDefault();
     if (!activeProject) return;
-    const updatedStory = {
+    StoryAPI.update({
       id: editingStoryId,
       nazwa: storyForm.nazwa,
       opis: storyForm.opis,
@@ -148,100 +131,93 @@ function App() {
       dataUtworzenia: new Date().toISOString(),
       stan: 'todo',
       wlasciciel: users.find(u => u.rola === 'admin').id
-    };
-    StoryAPI.update(updatedStory);
+    });
     setEditingStoryId(null);
     setStoryForm({ nazwa: '', opis: '', priorytet: 'niski' });
     loadStories(activeProject);
   };
-
-  const handleStoryStateChange = (story, newState) => {
-    const updatedStory = { ...story, stan: newState };
-    StoryAPI.update(updatedStory);
+  const handleStoryDelete = id => {
+    StoryAPI.delete(id);
+    loadStories(activeProject);
+  };
+  const handleStoryStateChange = (s, newState) => {
+    StoryAPI.update({ ...s, stan: newState });
     loadStories(activeProject);
   };
 
-  const filteredStories =
-    storyFilter === "all" ? stories : stories.filter(s => s.stan === storyFilter);
+  const filteredStories = storyFilter === 'all'
+    ? stories
+    : stories.filter(s => s.stan === storyFilter);
   const todoStories = stories.filter(s => s.stan === 'todo');
   const doingStories = stories.filter(s => s.stan === 'doing');
   const doneStories = stories.filter(s => s.stan === 'done');
 
-  // Funkcje dla zadań
-  const handleTaskSubmit = (e) => {
+  // Zadania
+  const handleTaskSubmit = e => {
     e.preventDefault();
     if (!activeProject) return;
     const now = new Date().toISOString();
-    const newTask = {
+    TaskAPI.create({
       id: Date.now(),
       nazwa: taskForm.nazwa,
       opis: taskForm.opis,
       priorytet: taskForm.priorytet,
       przewidywanyCzas: taskForm.przewidywanyCzas,
-      historyjkaId: parseInt(taskForm.historyjkaId),
+      historyjkaId: +taskForm.historyjkaId,
       stan: 'todo',
       dataDodania: now,
       dataStartu: null,
       dataZakonczenia: null,
       odpowiedzialny: null
-    };
-    TaskAPI.create(newTask);
+    });
     loadTasks(activeProject);
     setTaskForm({ nazwa: '', opis: '', priorytet: 'niski', przewidywanyCzas: '', historyjkaId: '' });
   };
-
-  const handleTaskDelete = (id) => {
-    TaskAPI.delete(id);
-    loadTasks(activeProject);
-  };
-
-  const handleTaskEdit = (task) => {
-    setEditingTaskId(task.id);
+  const handleTaskEdit = t => {
+    setEditingTaskId(t.id);
     setTaskForm({
-      nazwa: task.nazwa,
-      opis: task.opis,
-      priorytet: task.priorytet,
-      przewidywanyCzas: task.przewidywanyCzas,
-      historyjkaId: task.historyjkaId.toString()
+      nazwa: t.nazwa,
+      opis: t.opis,
+      priorytet: t.priorytet,
+      przewidywanyCzas: t.przewidywanyCzas,
+      historyjkaId: String(t.historyjkaId)
     });
   };
-
-  const handleTaskUpdate = (e) => {
+  const handleTaskUpdate = e => {
     e.preventDefault();
     const now = new Date().toISOString();
-    const updatedTask = {
+    TaskAPI.update({
       id: editingTaskId,
       nazwa: taskForm.nazwa,
       opis: taskForm.opis,
       priorytet: taskForm.priorytet,
       przewidywanyCzas: taskForm.przewidywanyCzas,
-      historyjkaId: parseInt(taskForm.historyjkaId),
+      historyjkaId: +taskForm.historyjkaId,
       stan: 'todo',
       dataDodania: now,
       dataStartu: null,
       dataZakonczenia: null,
       odpowiedzialny: null
-    };
-    TaskAPI.update(updatedTask);
+    });
     setEditingTaskId(null);
     setTaskForm({ nazwa: '', opis: '', priorytet: 'niski', przewidywanyCzas: '', historyjkaId: '' });
     loadTasks(activeProject);
   };
-
-  const assignUserToTask = (task, userId) => {
-    const user = users.find(u => u.id === userId && (u.rola === 'developer' || u.rola === 'devops'));
-    if (!user) return;
-    const now = new Date().toISOString();
-    const updatedTask = { ...task, odpowiedzialny: user.id, stan: 'doing', dataStartu: now };
-    TaskAPI.update(updatedTask);
+  const handleTaskDelete = id => {
+    TaskAPI.delete(id);
     loadTasks(activeProject);
   };
-
-  const completeTask = (task) => {
-    if (!task.odpowiedzialny) return;
+  const assignUserToTask = (t, userId) => {
+    const u = users.find(u => u.id === userId && (u.rola === 'developer' || u.rola === 'devops'));
+    if (!u) return;
     const now = new Date().toISOString();
-    const updatedTask = { ...task, stan: 'done', dataZakonczenia: now };
-    TaskAPI.update(updatedTask);
+    TaskAPI.update({ ...t, odpowiedzialny: u.id, stan: 'doing', dataStartu: now });
+    loadTasks(activeProject);
+  };
+  const completeTask = t => {
+    if (!t.odpowiedzialny) return;
+    const now = new Date().toISOString();
+    TaskAPI.update({ ...t, stan: 'done', dataZakonczenia: now });
     loadTasks(activeProject);
   };
 
@@ -253,10 +229,14 @@ function App() {
     <div style={{ padding: '2rem' }}>
       <h1>MANAGMe</h1>
       <p>
-        Zalogowany użytkownik: {users.find(u => u.rola === 'admin').imie} {users.find(u => u.rola === 'admin').nazwisko}
+        Zalogowany użytkownik: {
+          users.find(u => u.rola === 'admin').imie
+        } {
+          users.find(u => u.rola === 'admin').nazwisko
+        }
       </p>
 
-      {/* Sekcja CRUD dla projektów */}
+      {/* Projekty */}
       <section>
         <h2>Projekty</h2>
         <form onSubmit={handleProjectSubmit}>
@@ -264,202 +244,190 @@ function App() {
             type="text"
             placeholder="Nazwa projektu"
             value={projectForm.nazwa}
-            onChange={(e) => setProjectForm({ ...projectForm, nazwa: e.target.value })}
+            onChange={e => setProjectForm({ ...projectForm, nazwa: e.target.value })}
             required
           />
           <textarea
             placeholder="Opis projektu"
             value={projectForm.opis}
-            onChange={(e) => setProjectForm({ ...projectForm, opis: e.target.value })}
+            onChange={e => setProjectForm({ ...projectForm, opis: e.target.value })}
             required
           />
-          <button type="submit">{editingProjectId ? 'Zaktualizuj' : 'Dodaj'}</button>
+          <button type="submit">
+            {editingProjectId ? 'Zaktualizuj' : 'Dodaj'}
+          </button>
         </form>
         <ul>
-          {projects.map(project => (
-            <li key={project.id}>
-              <strong>{project.nazwa}</strong>
-              <p>{project.opis}</p>
+          {projects.map(p => (
+            <li key={p.id}>
+              <strong>{p.nazwa}</strong>
+              <p>{p.opis}</p>
               <div className="button-group">
-                <button className="edit" onClick={() => handleProjectEdit(project)}>Edytuj</button>
-                <button className="delete" onClick={() => handleProjectDelete(project.id)}>Usuń</button>
+                <button onClick={() => handleProjectEdit(p)}>Edytuj</button>
+                <button onClick={() => handleProjectDelete(p.id)}>Usuń</button>
               </div>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Sekcja wyboru aktywnego projektu */}
+      {/* Wybór aktywnego projektu */}
       <section style={{ marginTop: '2rem' }}>
         <h2>Wybierz aktywny projekt</h2>
-        <select value={activeProject ? activeProject.id : ''} onChange={handleActiveProjectChange}>
+        <select
+          value={activeProject?.id || ''}
+          onChange={handleActiveProjectChange}
+        >
           <option value="" disabled>-- wybierz projekt --</option>
-          {projects.map(project => (
-            <option key={project.id} value={project.id}>{project.nazwa}</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.nazwa}</option>
           ))}
         </select>
       </section>
 
-      {/* Sekcja CRUD dla historyjek */}
+      {/* Historyjki */}
       {activeProject && (
         <section style={{ marginTop: '2rem' }}>
-          <h2>Historyjki dla projektu: <em>{activeProject.nazwa}</em></h2>
+          <h2>Historyjki dla: <em>{activeProject.nazwa}</em></h2>
           <form onSubmit={editingStoryId ? handleStoryUpdate : handleStorySubmit}>
             <input
               type="text"
               placeholder="Nazwa historyjki"
               value={storyForm.nazwa}
-              onChange={(e) => setStoryForm({ ...storyForm, nazwa: e.target.value })}
+              onChange={e => setStoryForm({ ...storyForm, nazwa: e.target.value })}
               required
             />
             <textarea
               placeholder="Opis historyjki"
               value={storyForm.opis}
-              onChange={(e) => setStoryForm({ ...storyForm, opis: e.target.value })}
+              onChange={e => setStoryForm({ ...storyForm, opis: e.target.value })}
               required
             />
             <select
               value={storyForm.priorytet}
-              onChange={(e) => setStoryForm({ ...storyForm, priorytet: e.target.value })}
+              onChange={e => setStoryForm({ ...storyForm, priorytet: e.target.value })}
             >
               <option value="niski">Niski</option>
               <option value="średni">Średni</option>
               <option value="wysoki">Wysoki</option>
             </select>
-            <button type="submit">{editingStoryId ? 'Zaktualizuj' : 'Dodaj'}</button>
+            <button type="submit">
+              {editingStoryId ? 'Zaktualizuj' : 'Dodaj'}
+            </button>
           </form>
-          <div style={{ marginBottom: '1rem' }}>
-            <strong>Filtruj historyjki:</strong>
-            <div className="button-group">
-              <button onClick={() => setStoryFilter("all")}>Wszystkie</button>
-              <button onClick={() => setStoryFilter("todo")}>Do zrobienia</button>
-              <button onClick={() => setStoryFilter("doing")}>W trakcie</button>
-              <button onClick={() => setStoryFilter("done")}>Zrobione</button>
-            </div>
+          {/* Filtr historyjek */}
+          <div style={{ margin: '1rem 0' }}>
+            <strong>Filtr:</strong>
+            {['all','todo','doing','done'].map(f => (
+              <button key={f} onClick={()=>setStoryFilter(f)}>
+                {f==='all'?'Wszystkie':f}
+              </button>
+            ))}
           </div>
-          {storyFilter !== "all" ? (
-            <div>
-              <h3>Widok filtrowany: {storyFilter.toUpperCase()}</h3>
-              <ul>
-                {filteredStories.map(story => (
-                  <li key={story.id}>
-                    <strong>{story.nazwa}</strong>
-                    <p>{story.opis}</p>
-                    <div className="button-group">
-                      <button onClick={() => handleStoryEdit(story)}>Edytuj</button>
-                      <button onClick={() => handleStoryDelete(story.id)}>Usuń</button>
-                      <select
-                        value={story.stan}
-                        onChange={(e) => handleStoryStateChange(story, e.target.value)}
-                      >
-                        <option value="todo">Do zrobienia</option>
-                        <option value="doing">W trakcie</option>
-                        <option value="done">Zrobione</option>
-                      </select>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {storyFilter !== 'all' ? (
+            <ul>
+              {filteredStories.map(s => (
+                <li key={s.id}>
+                  <strong>{s.nazwa}</strong>
+                  <p>{s.opis}</p>
+                  <div className="button-group">
+                    <button onClick={()=>handleStoryEdit(s)}>Edytuj</button>
+                    <button onClick={()=>handleStoryDelete(s.id)}>Usuń</button>
+                    <select
+                      value={s.stan}
+                      onChange={e=>handleStoryStateChange(s,e.target.value)}
+                    >
+                      <option value="todo">Do zrobienia</option>
+                      <option value="doing">W trakcie</option>
+                      <option value="done">Zrobione</option>
+                    </select>
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : (
             <>
-              <div>
-                <h3>Do zrobienia 🟥</h3>
-                <ul>
-                  {todoStories.map(story => (
-                    <li key={story.id}>
-                      <strong>{story.nazwa}</strong>
-                      <p>{story.opis}</p>
-                      <div className="button-group">
-                        <button onClick={() => handleStoryEdit(story)}>Edytuj</button>
-                        <button onClick={() => handleStoryDelete(story.id)}>Usuń</button>
-                        <select
-                          value={story.stan}
-                          onChange={(e) => handleStoryStateChange(story, e.target.value)}
-                        >
-                          <option value="todo">Do zrobienia 🟥</option>
-                          <option value="doing">W trakcie 🟨</option>
-                          <option value="done">Zrobione 🟩</option>
-                        </select>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h3>W trakcie 🟨</h3>
-                <ul>
-                  {doingStories.map(story => (
-                    <li key={story.id}>
-                      <strong>{story.nazwa}</strong>
-                      <p>{story.opis}</p>
-                      <div className="button-group">
-                        <button onClick={() => handleStoryEdit(story)}>Edytuj</button>
-                        <button onClick={() => handleStoryDelete(story.id)}>Usuń</button>
-                        <select
-                          value={story.stan}
-                          onChange={(e) => handleStoryStateChange(story, e.target.value)}
-                        >
-                          <option value="todo">Do zrobienia 🟥</option>
-                          <option value="doing">W trakcie 🟨</option>
-                          <option value="done">Zrobione 🟩</option>
-                        </select>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div>
-                <h3>Zrobione 🟩</h3>
-                <ul>
-                  {doneStories.map(story => (
-                    <li key={story.id}>
-                      <strong>{story.nazwa}</strong>
-                      <p>{story.opis}</p>
-                      <div className="button-group">
-                        <button onClick={() => handleStoryEdit(story)}>Edytuj</button>
-                        <button onClick={() => handleStoryDelete(story.id)}>Usuń</button>
-                        <select
-                          value={story.stan}
-                          onChange={(e) => handleStoryStateChange(story, e.target.value)}
-                        >
-                          <option value="todo">Do zrobienia</option>
-                          <option value="doing">W trakcie</option>
-                          <option value="done">Zrobione</option>
-                        </select>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Kanban historyjek: Todo, Doing, Done */}
+              <div><h3>Do zrobienia</h3><ul>
+                {todoStories.map(s=>(
+                  <li key={s.id}>
+                    <strong>{s.nazwa}</strong>
+                    <p>{s.opis}</p>
+                    <button onClick={()=>handleStoryEdit(s)}>Edytuj</button>
+                    <button onClick={()=>handleStoryDelete(s.id)}>Usuń</button>
+                    <select
+                      value={s.stan}
+                      onChange={e=>handleStoryStateChange(s,e.target.value)}
+                    >
+                      <option value="todo">🟥</option>
+                      <option value="doing">🟨</option>
+                      <option value="done">🟩</option>
+                    </select>
+                  </li>
+                ))}
+              </ul></div>
+              <div><h3>W trakcie</h3><ul>
+                {doingStories.map(s=>(
+                  <li key={s.id}>
+                    <strong>{s.nazwa}</strong>
+                    <p>{s.opis}</p>
+                    <button onClick={()=>handleStoryEdit(s)}>Edytuj</button>
+                    <button onClick={()=>handleStoryDelete(s.id)}>Usuń</button>
+                    <select
+                      value={s.stan}
+                      onChange={e=>handleStoryStateChange(s,e.target.value)}
+                    >
+                      <option value="todo">🟥</option>
+                      <option value="doing">🟨</option>
+                      <option value="done">🟩</option>
+                    </select>
+                  </li>
+                ))}
+              </ul></div>
+              <div><h3>Zrobione</h3><ul>
+                {doneStories.map(s=>(
+                  <li key={s.id}>
+                    <strong>{s.nazwa}</strong>
+                    <p>{s.opis}</p>
+                    <button onClick={()=>handleStoryEdit(s)}>Edytuj</button>
+                    <button onClick={()=>handleStoryDelete(s.id)}>Usuń</button>
+                    <select
+                      value={s.stan}
+                      onChange={e=>handleStoryStateChange(s,e.target.value)}
+                    >
+                      <option value="todo">🟥</option>
+                      <option value="doing">🟨</option>
+                      <option value="done">🟩</option>
+                    </select>
+                  </li>
+                ))}
+              </ul></div>
             </>
           )}
         </section>
       )}
 
-      {/* Sekcja CRUD i Kanban dla zadań */}
+      {/* Zadania Kanban */}
       {activeProject && (
         <section style={{ marginTop: '2rem' }}>
-          <h2>Zadania dla projektu (Kanban)</h2>
+          <h2>Zadania (Kanban)</h2>
           <form onSubmit={editingTaskId ? handleTaskUpdate : handleTaskSubmit}>
             <input
               type="text"
               placeholder="Nazwa zadania"
               value={taskForm.nazwa}
-              onChange={(e) => setTaskForm({ ...taskForm, nazwa: e.target.value })}
+              onChange={e=>setTaskForm({...taskForm,nazwa:e.target.value})}
               required
             />
             <textarea
               placeholder="Opis zadania"
               value={taskForm.opis}
-              onChange={(e) => setTaskForm({ ...taskForm, opis: e.target.value })}
+              onChange={e=>setTaskForm({...taskForm,opis:e.target.value})}
               required
             />
             <select
               value={taskForm.priorytet}
-              onChange={(e) => setTaskForm({ ...taskForm, priorytet: e.target.value })}
+              onChange={e=>setTaskForm({...taskForm,priorytet:e.target.value})}
             >
               <option value="niski">Niski</option>
               <option value="średni">Średni</option>
@@ -467,96 +435,68 @@ function App() {
             </select>
             <input
               type="text"
-              placeholder="Przewidywany czas wykonania (h)"
+              placeholder="Przewidywany czas (h)"
               value={taskForm.przewidywanyCzas}
-              onChange={(e) => setTaskForm({ ...taskForm, przewidywanyCzas: e.target.value })}
+              onChange={e=>setTaskForm({...taskForm,przewidywanyCzas:e.target.value})}
               required
             />
             <select
               value={taskForm.historyjkaId}
-              onChange={(e) => setTaskForm({ ...taskForm, historyjkaId: e.target.value })}
+              onChange={e=>setTaskForm({...taskForm,historyjkaId:e.target.value})}
               required
             >
               <option value="" disabled>-- wybierz historyjkę --</option>
-              {stories.map(story => (
-                <option key={story.id} value={story.id}>{story.nazwa}</option>
+              {stories.map(s=>(
+                <option key={s.id} value={s.id}>{s.nazwa}</option>
               ))}
             </select>
-            <button type="submit">{editingTaskId ? 'Zaktualizuj' : 'Dodaj'}</button>
+            <button type="submit">
+              {editingTaskId ? 'Zaktualizuj' : 'Dodaj'}
+            </button>
           </form>
-          <div style={{ marginTop: '1rem' }}>
-            <h3>Kanban Board</h3>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-around' }}>
-              <div className="kanban-column todo" style={{ flex: 1 }}>
-                <h4>Todo</h4>
+
+          <div style={{ display:'flex', gap:'1rem', marginTop:'1rem' }}>
+            {['todo','doing','done'].map(status=>(
+              <div key={status} style={{ flex:1 }}>
+                <h4>{status.toUpperCase()}</h4>
                 <ul>
-                  {tasksTodo.map(task => (
-                    <li key={task.id}>
-                      <strong>{task.nazwa}</strong>
-                      <p>{task.opis}</p>
-                      <p>Przewidywany czas: {task.przewidywanyCzas}h</p>
-                      <p>Dodano: {task.dataDodania}</p>
-                      <div className="button-group">
-                        <select onChange={(e) => assignUserToTask(task, parseInt(e.target.value))} defaultValue="">
-                          <option value="" disabled>Przypisz</option>
-                          {users.filter(u => u.rola !== 'admin').map(u => (
-                            <option key={u.id} value={u.id}>
-                              {u.imie} {u.nazwisko} ({u.rola})
-                            </option>
-                          ))}
-                        </select>
-                        <button onClick={() => completeTask(task)}>Zakończ</button>
-                        <button onClick={() => handleTaskEdit(task)}>Edytuj</button>
-                        <button onClick={() => handleTaskDelete(task.id)}>Usuń</button>
-                      </div>
-                      {task.odpowiedzialny && (
-                        <p>Przypisany: {users.find(u => u.id === task.odpowiedzialny)?.imie} {users.find(u => u.id === task.odpowiedzialny)?.nazwisko}</p>
+                  {(status==='todo'?tasksTodo:status==='doing'?tasksDoing:tasksDone).map(t=>(
+                    <li key={t.id}>
+                      <strong>{t.nazwa}</strong>
+                      <p>{t.opis}</p>
+                      {status==='todo' && (
+                        <>
+                          <p>Dodano: {t.dataDodania}</p>
+                          <p>Przewidywany: {t.przewidywanyCzas}h</p>
+                          <select defaultValue="" onChange={e=>assignUserToTask(t,+e.target.value)}>
+                            <option value="" disabled>Przypisz</option>
+                            {users.filter(u=>u.rola!=='admin').map(u=>(
+                              <option key={u.id} value={u.id}>
+                                {u.imie} {u.nazwisko} ({u.rola})
+                              </option>
+                            ))}
+                          </select>
+                          <button onClick={()=>completeTask(t)}>Zakończ</button>
+                        </>
                       )}
-                      {task.dataStartu && <p>Start: {task.dataStartu}</p>}
-                      {task.dataZakonczenia && <p>Zakończono: {task.dataZakonczenia}</p>}
+                      <div className="button-group">
+                        <button onClick={()=>handleTaskEdit(t)}>Edytuj</button>
+                        <button onClick={()=>handleTaskDelete(t.id)}>Usuń</button>
+                      </div>
+                      {t.odpowiedzialny && (
+                        <p>Przypisany: {
+                          users.find(u=>u.id===t.odpowiedzialny)?.imie
+                        } {
+                          users.find(u=>u.id===t.odpowiedzialny)?.nazwisko
+                        }</p>
+                      )}
+                      {t.dataStartu && <p>Start: {t.dataStartu}</p>}
+                      {t.dataZakonczenia && <p>Zakończono: {t.dataZakonczenia}</p>}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="kanban-column doing" style={{ flex: 1 }}>
-                <h4>Doing</h4>
-                <ul>
-                  {tasksDoing.map(task => (
-                    <li key={task.id}>
-                      <strong>{task.nazwa}</strong>
-                      <p>{task.opis}</p>
-                      <div className="button-group">
-                        <button onClick={() => handleTaskEdit(task)}>Edytuj</button>
-                        <button onClick={() => handleTaskDelete(task.id)}>Usuń</button>
-                      </div>
-                      {task.odpowiedzialny && (
-                        <p>Przypisany: {users.find(u => u.id === task.odpowiedzialny)?.imie} {users.find(u => u.id === task.odpowiedzialny)?.nazwisko}</p>
-                      )}
-                      {task.dataStartu && <p>Start: {task.dataStartu}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="kanban-column done" style={{ flex: 1 }}>
-                <h4>Done</h4>
-                <ul>
-                  {tasksDone.map(task => (
-                    <li key={task.id}>
-                      <strong>{task.nazwa}</strong>
-                      <p>{task.opis}</p>
-                      <div className="button-group">
-                        <button onClick={() => handleTaskEdit(task)}>Edytuj</button>
-                        <button onClick={() => handleTaskDelete(task.id)}>Usuń</button>
-                      </div>
-                      {task.odpowiedzialny && (
-                        <p>Przypisany: {users.find(u => u.id === task.odpowiedzialny)?.imie} {users.find(u => u.id === task.odpowiedzialny)?.nazwisko}</p>
-                      )}
-                      {task.dataZakonczenia && <p>Zakończono: {task.dataZakonczenia}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
       )}
@@ -564,4 +504,22 @@ function App() {
   );
 }
 
-export default App;
+function App() {
+  const { user, login } = useContext(AuthContext);
+
+  const handleLoginSuccess = ({ token, refreshToken }) => {
+    login(token, refreshToken);
+  };
+
+  return !user
+    ? <LoginForm onLoginSuccess={handleLoginSuccess} />
+    : <Dashboard />;
+}
+
+export default function AppWrapper() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}
