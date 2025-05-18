@@ -503,10 +503,12 @@ function App() {
   };
 
   return (
+    
     <>
+    
       <Navbar />
 
-      <main className="min-h-screen flex items-center justify-center bg-base-300">
+      <main className="min-h-screen flex items-center justify-center bg-gray-300">
         {!user ? (
           <LoginForm onLoginSuccess={onLogin} />
         ) : (
