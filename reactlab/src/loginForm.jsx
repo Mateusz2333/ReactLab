@@ -1,4 +1,3 @@
-// src/loginForm.jsx
 import React, { useState, useContext } from 'react';
 import { AuthContext } from './AuthContext';
 

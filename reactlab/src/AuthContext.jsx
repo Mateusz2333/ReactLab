@@ -8,6 +8,7 @@ export const AuthContext = createContext({
   loading: true,
   login: () => {},
   logout: () => {},
+  socialLogin: () => {},
 });
 
 export const AuthProvider = ({ children }) => {
@@ -15,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
   const fetchMe = async (jwt) => {
     try {
       const res = await fetch(`${API_BASE}/me`, {
@@ -23,11 +23,10 @@ export const AuthProvider = ({ children }) => {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log('[fetchMe] USER FROM BACKEND:', data);
         setUser(data);
         return true;
       } else if (res.status === 403) {
-        return await refreshToken(); 
+        return await refreshToken();
       }
     } catch (err) {
       console.error('fetchMe error', err);
@@ -36,21 +35,17 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
-  // Odśwież token JWT
   const refreshToken = async () => {
     const storedRefresh = localStorage.getItem('refreshToken');
     if (!storedRefresh) return false;
-
     try {
       const res = await fetch(`${API_BASE}/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: storedRefresh }),
       });
-
       if (!res.ok) throw new Error('Refresh failed');
       const { token: newToken } = await res.json();
-
       localStorage.setItem('token', newToken);
       setToken(newToken);
       return await fetchMe(newToken);
@@ -61,7 +56,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logowanie użytkownika
   const login = async (jwt, refresh) => {
     localStorage.setItem('token', jwt);
     localStorage.setItem('refreshToken', refresh);
@@ -69,7 +63,6 @@ export const AuthProvider = ({ children }) => {
     await fetchMe(jwt);
   };
 
-  
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
@@ -77,7 +70,20 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
-  
+  const socialLogin = async (idToken) => {
+    const res = await fetch('http://localhost:3001/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) throw new Error('Google login failed');
+    const { token: jwt, refreshToken } = await res.json();
+    localStorage.setItem('token', jwt);
+    localStorage.setItem('refreshToken', refreshToken);
+    setToken(jwt);
+    await fetchMe(jwt);
+  };
+
   useEffect(() => {
     const init = async () => {
       const stored = localStorage.getItem('token');
@@ -91,11 +97,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, socialLogin }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
 
 export const useAuth = () => useContext(AuthContext);

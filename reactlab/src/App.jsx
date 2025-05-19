@@ -10,6 +10,7 @@ import { AuthContext, AuthProvider } from './AuthContext';
 import ThemeToggle from './ThemeToggle';
 import Footer from './footer';
 import Navbar from './Navbar';
+import GoogleLoginButton from './GoogleLoginButton';
 
 function Dashboard() {
   // Projekty
@@ -497,20 +498,21 @@ function Dashboard() {
 
 function App() {
   const { user, login } = useContext(AuthContext);
-
-  const onLogin = ({ token, refreshToken }) => {
-    login(token, refreshToken);
-  };
+  const onLogin = ({ token, refreshToken }) => login(token, refreshToken);
 
   return (
-    
     <>
-    
       <Navbar />
 
       <main className="min-h-screen flex items-center justify-center bg-gray-300">
         {!user ? (
-          <LoginForm onLoginSuccess={onLogin} />
+          <div className="space-y-6">           
+            <LoginForm onLoginSuccess={onLogin} />
+            <div className="text-center">
+              <span className="text-sm opacity-70">— lub —</span>
+              <GoogleLoginButton />
+            </div>
+          </div>
         ) : (
           <Dashboard />
         )}

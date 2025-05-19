@@ -23,8 +23,7 @@ export default function ThemeToggle() {
         onChange={toggleTheme}
         className="hidden"
       />
-
-      {/* Sun icon */}
+  
       <svg
         className="swap-off h-10 w-10 fill-current"
         xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +34,6 @@ export default function ThemeToggle() {
         />
       </svg>
 
-      {/* Moon icon */}
       <svg
         className="swap-on h-10 w-10 fill-current"
         xmlns="http://www.w3.org/2000/svg"
