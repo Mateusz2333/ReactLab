@@ -5,7 +5,7 @@ import { AuthContext } from './AuthContext';
 export default function GoogleLoginButton() {
   const { socialLogin } = useContext(AuthContext);
 
-  return (
+   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <GoogleLogin
         onSuccess={credentialResponse => socialLogin(credentialResponse.credential)}
