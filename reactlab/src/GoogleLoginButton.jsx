@@ -8,14 +8,9 @@ export default function GoogleLoginButton() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <GoogleLogin
-  onSuccess={credentialResponse => {
-    console.log('GOOGLE SUCCESS:', credentialResponse); 
-    socialLogin(credentialResponse.credential);
-  }}
-  onError={() => console.error('Google login failed')}
-/>
-
+        onSuccess={credentialResponse => socialLogin(credentialResponse.credential)}
+        onError={() => console.error('Google login failed')}
+      />
     </GoogleOAuthProvider>
   );
 }
-//ibhjbihgubhhbbhj
