@@ -1,42 +1,49 @@
-class ProjectAPI {
-    constructor() {
-      this.storageKey = 'projects';
-      if (!localStorage.getItem(this.storageKey)) {
-        localStorage.setItem(this.storageKey, JSON.stringify([]));
-      }
-    }
-  
-    getAll() {
-      return JSON.parse(localStorage.getItem(this.storageKey)) || [];
-    }
-  
-    getById(id) {
-      return this.getAll().find((project) => project.id === id);
-    }
-  
-    create(project) {
-      const projects = this.getAll();
-      projects.push(project);
-      localStorage.setItem(this.storageKey, JSON.stringify(projects));
-      return project;
-    }
-  
-    update(updatedProject) {
-      const projects = this.getAll();
-      const index = projects.findIndex((p) => p.id === updatedProject.id);
-      if (index !== -1) {
-        projects[index] = updatedProject;
-        localStorage.setItem(this.storageKey, JSON.stringify(projects));
-        return updatedProject;
-      }
-      return null;
-    }
-  
-    delete(id) {
-      const projects = this.getAll().filter((p) => p.id !== id);
-      localStorage.setItem(this.storageKey, JSON.stringify(projects));
+const API_URL = 'http://localhost:3001/api/projects';
+
+const getHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`
+});
+
+const ProjectAPI = {
+  getAll: async () => {
+    const res = await fetch(API_URL, { headers: getHeaders() });
+    return res.json();
+  },
+
+  getById: async (id) => {
+    const res = await fetch(`${API_URL}/${id}`, { headers: getHeaders() });
+    return res.json();
+  },
+
+  create: async (project) => {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(project)
+    });
+    return res.json();
+  },
+
+  update: async (project) => {
+    const res = await fetch(`${API_URL}/${project._id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(project)
+    });
+    return res.json();
+  },
+
+  delete: async (id) => {
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Delete failed: ${err}`);
     }
   }
-  
-  export default new ProjectAPI();
-  
+};
+
+export default ProjectAPI;

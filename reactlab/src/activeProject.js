@@ -1,17 +1,19 @@
 class ActiveProject {
-    constructor() {
-      this.storageKey = 'activeProject';
-    }
-    get() {
-      return JSON.parse(localStorage.getItem(this.storageKey)) || null;
-    }
-    set(project) {
-      localStorage.setItem(this.storageKey, JSON.stringify(project));
-    }
-    clear() {
-      localStorage.removeItem(this.storageKey);
-    }
+  constructor() {
+    this.project = null;
   }
-  
-  export default new ActiveProject();
-  
+
+  get() {
+    return this.project;
+  }
+
+  set(project) {
+    this.project = project;
+  }
+
+  clear() {
+    this.project = null;
+  }
+}
+
+export default new ActiveProject();

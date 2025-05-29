@@ -1,9 +1,14 @@
-require('dotenv').config();   
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const { OAuth2Client } = require('google-auth-library');
+
+// Połączenie z MongoDB
+const connectDB = require('./db');
+connectDB();
+
 const users = require('./users');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -13,11 +18,10 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const SECRET_KEY = process.env.JWT_SECRET;
+const REFRESH_SECRET_KEY = process.env.REFRESH_TOKEN_SECRET;
 
-const SECRET_KEY = process.env.JWT_SECRET;            
-const REFRESH_SECRET_KEY = process.env.REFRESH_TOKEN_SECRET; 
-
-
+// Google OAuth
 app.post('/auth/google', async (req, res) => {
   const { idToken } = req.body;
   try {
@@ -25,9 +29,8 @@ app.post('/auth/google', async (req, res) => {
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    const { email, name, sub } = ticket.getPayload();
+    const { email, name } = ticket.getPayload();
 
-   
     let user = users.find(u => u.login === email);
     if (!user) {
       user = {
@@ -41,7 +44,6 @@ app.post('/auth/google', async (req, res) => {
       users.push(user);
     }
 
-    
     const token = jwt.sign(
       { id: user.id, rola: user.rola },
       SECRET_KEY,
@@ -61,9 +63,9 @@ app.post('/auth/google', async (req, res) => {
   }
 });
 
-
+// Standard login
 app.post('/api/login', (req, res) => {
-  const { login, password } = req.body;  
+  const { login, password } = req.body;
   const user = users.find(u => u.login === login && u.password === password);
   if (!user) {
     return res.status(401).json({ message: 'Nieprawidłowe dane logowania' });
@@ -75,7 +77,7 @@ app.post('/api/login', (req, res) => {
   res.json({ token, refreshToken });
 });
 
-
+// Refresh token
 app.post('/api/refresh', (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken || !refreshTokens.includes(refreshToken)) {
@@ -90,7 +92,7 @@ app.post('/api/refresh', (req, res) => {
   }
 });
 
-
+// Fetch current user
 app.get('/api/me', (req, res) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ message: 'Brak nagłówka Authorization' });
@@ -107,6 +109,13 @@ app.get('/api/me', (req, res) => {
   }
 });
 
-app.listen(3001, () => {
-  console.log('MiniAPI działa na http://localhost:3001');
+// Nowe routy CRUD dla projektów / historii / zadań
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/stories',  require('./routes/stories'));
+app.use('/api/tasks',    require('./routes/tasks'));
+
+// Start serwera
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`MiniAPI działa na http://localhost:${PORT}`);
 });
