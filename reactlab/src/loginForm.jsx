@@ -31,7 +31,7 @@ function LoginForm({ onLoginSuccess }) {
     <form
   onSubmit={handleSubmit}
   className="max-w-sm mx-auto mt-[-400px] space-y-5 p-6 bg-base-100 rounded-lg shadow-lg">
-  <h2 className="text-2xl font-bold text-center">Zaloguj się</h2>
+  <h2 className="text-2xl font-bold text-center">Zaloguj sie</h2>
   <div className="form-control">
     <label className="label"><span className="label-text">Login</span></label>
     <input

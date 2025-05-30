@@ -60,15 +60,12 @@ function Dashboard() {
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
-  useEffect(() => {
-    if (activeProject) {
-      loadStories(activeProject);
-      loadTasks(activeProject);
-    } else {
-      setStories([]);
-      setTasks([]);
-    }
-  }, [activeProject, loadStories, loadTasks]);
+ useEffect(() => {
+  if (projects.length > 0 && !activeProject) {
+    setActiveProject(projects[0]);
+  }
+}, [projects, activeProject]);
+
 
   // Handlers: Projects
   const handleProjectSubmit = async e => {
